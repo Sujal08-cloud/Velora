@@ -38,21 +38,109 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
 
   Color _statusColor(String status) {
     switch (status) {
-      case "Confirmed": return Colors.blue;
-      case "Shipped":   return Colors.purple;
-      case "Delivered": return Colors.green;
-      case "Cancelled": return Colors.red;
-      default:          return Colors.orange; // Processing
+      case "Confirmed":
+        return Colors.blue;
+      case "Shipped":
+        return Colors.purple;
+      case "Delivered":
+        return Colors.green;
+      case "Cancelled":
+        return Colors.red;
+      default:
+        return Colors.orange;
     }
   }
 
   IconData _statusIcon(String status) {
     switch (status) {
-      case "Confirmed": return Icons.check_circle_outline;
-      case "Shipped":   return Icons.local_shipping_outlined;
-      case "Delivered": return Icons.done_all;
-      case "Cancelled": return Icons.cancel_outlined;
-      default:          return Icons.autorenew; // Processing
+      case "Confirmed":
+        return Icons.check_circle_outline;
+      case "Shipped":
+        return Icons.local_shipping_outlined;
+      case "Delivered":
+        return Icons.done_all;
+      case "Cancelled":
+        return Icons.cancel_outlined;
+      default:
+        return Icons.autorenew;
+    }
+  }
+
+  Future<void> _cancelOrder(String orderId, String orderName) async {
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Cancel Order?",
+          style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "Are you sure you want to cancel \"$orderName\"? This action cannot be undone.",
+          style: GoogleFonts.lato(fontSize: 14, color: Colors.grey.shade700),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              "No, Keep it",
+              style: GoogleFonts.lato(
+                color: Color(0xff6e5038),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              "Yes, Cancel",
+              style: GoogleFonts.lato(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && id != null) {
+      try {
+        await DatabaseMethods().updateOrderStatus(id!, orderId, "Cancelled");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red,
+              content: Text(
+                "Order cancelled successfully",
+                style: GoogleFonts.lato(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+          setState(() => selectedCategory = "Cancelled");
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red,
+              content: Text(
+                "Failed to cancel order. Try again.",
+                style: GoogleFonts.lato(color: Colors.white),
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -80,9 +168,13 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(left: 20.0),
-            child: Text("My Orders",
-                style: GoogleFonts.playfairDisplay(
-                    fontSize: 26, fontWeight: FontWeight.bold)),
+            child: Text(
+              "My Orders",
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           SizedBox(height: 16),
 
@@ -97,15 +189,12 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                   onTap: () => setState(() => selectedCategory = category),
                   child: Container(
                     margin: EdgeInsets.only(right: 10),
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected ? catColor : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected
-                            ? catColor
-                            : Colors.grey.shade300,
+                        color: isSelected ? catColor : Colors.grey.shade300,
                       ),
                     ),
                     child: Row(
@@ -119,8 +208,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                         Text(
                           category,
                           style: GoogleFonts.lato(
-                            color:
-                                isSelected ? Colors.white : Colors.black87,
+                            color: isSelected ? Colors.white : Colors.black87,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
@@ -138,25 +226,23 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           Expanded(
             child: orderStream == null
                 ? Center(
-                    child: CircularProgressIndicator(
-                        color: Color(0xff6e5038)))
+                    child: CircularProgressIndicator(color: Color(0xff6e5038)),
+                  )
                 : StreamBuilder(
                     stream: orderStream,
                     builder: (context, AsyncSnapshot snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(
-                            child: CircularProgressIndicator(
-                                color: Color(0xff6e5038)));
+                          child: CircularProgressIndicator(
+                            color: Color(0xff6e5038),
+                          ),
+                        );
                       }
-                      if (!snapshot.hasData ||
-                          snapshot.data.docs.isEmpty) {
+                      if (!snapshot.hasData || snapshot.data.docs.isEmpty) {
                         return _emptyState();
                       }
-                      var filteredDocs =
-                          snapshot.data.docs.where((doc) {
-                        String status =
-                            doc["Status"] ?? "Processing";
+                      var filteredDocs = snapshot.data.docs.where((doc) {
+                        String status = doc["Status"] ?? "Processing";
                         return status == selectedCategory;
                       }).toList();
 
@@ -185,11 +271,14 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           Icon(Icons.receipt_long_outlined,
               size: 60, color: Colors.grey.shade300),
           SizedBox(height: 12),
-          Text("No $selectedCategory orders",
-              style: GoogleFonts.lato(
-                  color: Colors.grey,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500)),
+          Text(
+            "No $selectedCategory orders",
+            style: GoogleFonts.lato(
+              color: Colors.grey,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -199,6 +288,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     String status = ds["Status"] ?? "Processing";
     Color statusColor = _statusColor(status);
     IconData statusIcon = _statusIcon(status);
+    bool canCancel = status == "Processing" || status == "Confirmed";
 
     return Container(
       padding: EdgeInsets.all(14),
@@ -208,9 +298,10 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-              offset: Offset(0, 2))
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -222,65 +313,100 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
               Expanded(
                 child: Text(
                   "Order: ${ds["Name"] ?? ""}",
-                  style: GoogleFonts.lato(
-                      fontWeight: FontWeight.bold, fontSize: 14),
+                  style:
+                      GoogleFonts.lato(fontWeight: FontWeight.bold, fontSize: 14),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(ds["Date"] ?? "",
-                  style: GoogleFonts.lato(
-                      color: Colors.grey, fontSize: 12)),
+              Text(
+                ds["Date"] ?? "",
+                style: GoogleFonts.lato(color: Colors.grey, fontSize: 12),
+              ),
             ],
           ),
           SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Qty: ${ds["Quantity"] ?? "1"}",
-                  style: GoogleFonts.lato(
-                      color: Colors.grey, fontSize: 12)),
-              Text("₹${ds["Total Price"] ?? "0"}",
-                  style: GoogleFonts.lato(
-                      color: Colors.black87,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700)),
+              Text(
+                "Qty: ${ds["Quantity"] ?? "1"}",
+                style: GoogleFonts.lato(color: Colors.grey, fontSize: 12),
+              ),
+              Text(
+                "₹${ds["Total Price"] ?? "0"}",
+                style: GoogleFonts.lato(
+                  color: Colors.black87,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 10),
           _statusProgressBar(status),
-
           SizedBox(height: 10),
+
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: statusColor.withOpacity(0.4)),
+                  border: Border.all(color: statusColor.withOpacity(0.4)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(statusIcon, size: 13, color: statusColor),
                     SizedBox(width: 4),
-                    Text(status,
-                        style: GoogleFonts.lato(
-                            color: statusColor,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12)),
+                    Text(
+                      status,
+                      style: GoogleFonts.lato(
+                        color: statusColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
+              if (canCancel)
+                GestureDetector(
+                  onTap: () => _cancelOrder(ds.id, ds["Name"] ?? "this order"),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cancel_outlined,
+                            size: 13, color: Colors.red),
+                        SizedBox(width: 4),
+                        Text(
+                          "Cancel",
+                          style: GoogleFonts.lato(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
       ),
     );
   }
+
   Widget _statusProgressBar(String status) {
     final steps = ["Processing", "Confirmed", "Shipped", "Delivered"];
     if (status == "Cancelled") {
@@ -288,11 +414,14 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
         children: [
           Icon(Icons.cancel, size: 14, color: Colors.red),
           SizedBox(width: 6),
-          Text("Order Cancelled",
-              style: GoogleFonts.lato(
-                  color: Colors.red,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            "Order Cancelled",
+            style: GoogleFonts.lato(
+              color: Colors.red,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       );
     }
@@ -301,7 +430,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
 
     return Row(
       children: List.generate(steps.length, (i) {
-        bool done    = i <= currentStep;
+        bool done = i <= currentStep;
         bool current = i == currentStep;
         return Expanded(
           child: Row(

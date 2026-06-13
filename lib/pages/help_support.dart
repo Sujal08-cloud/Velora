@@ -12,7 +12,7 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
   final List<Map<String, String>> faqs = [
     {"q": "How do I track my order?", "a": "Go to My Orders section in your profile to track all your orders."},
     {"q": "How do I add money to wallet?", "a": "Go to Wallet tab and use Quick Add or enter a custom amount to recharge."},
-    {"q": "Can I cancel my order?", "a": "Currently orders cannot be cancelled once placed. Contact support for help."},
+    {"q": "Can I cancel my order?", "a": "You can cancel your order before it is shipped. Go to My Orders and tap the Cancel button on your order."},
     {"q": "How do I change my delivery address?", "a": "Go to Profile → Shipping Address to update your delivery address."},
     {"q": "What payment methods are accepted?", "a": "We accept wallet payments via Razorpay including UPI, cards and net banking."},
     {"q": "How do I update my profile?", "a": "Go to Profile → Edit Profile to update your name and other details."},
@@ -50,7 +50,11 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
                 SizedBox(height: 16),
                 Text(
                   "Help & Support",
-                  style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.playfairDisplay(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 SizedBox(height: 4),
                 Text(
@@ -95,7 +99,10 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
               alignment: Alignment.centerLeft,
               child: Text(
                 "Frequently Asked Questions",
-                style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -119,7 +126,13 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: Offset(0, 2))],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Column(
                       children: [
@@ -131,11 +144,16 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
                               Expanded(
                                 child: Text(
                                   faqs[index]["q"]!,
-                                  style: GoogleFonts.lato(fontSize: 13, fontWeight: FontWeight.w700),
+                                  style: GoogleFonts.lato(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                               Icon(
-                                isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                isExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
                                 color: Color(0xff6e5038),
                               ),
                             ],
@@ -144,10 +162,18 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
                         if (isExpanded)
                           Container(
                             width: double.infinity,
-                            padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                            padding: EdgeInsets.only(
+                              left: 16,
+                              right: 16,
+                              bottom: 16,
+                            ),
                             child: Text(
                               faqs[index]["a"]!,
-                              style: GoogleFonts.lato(fontSize: 13, color: Colors.grey.shade600, height: 1.5),
+                              style: GoogleFonts.lato(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                                height: 1.5,
+                              ),
                             ),
                           ),
                       ],
@@ -162,20 +188,34 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
     );
   }
 
-  Widget _contactCard({required IconData icon, required String title, required String subtitle, required Color color}) {
+  Widget _contactCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
     return Container(
       padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             height: 36,
             width: 36,
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(icon, color: color, size: 18),
           ),
           SizedBox(width: 10),
@@ -183,8 +223,18 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: GoogleFonts.lato(fontSize: 12, fontWeight: FontWeight.w700)),
-                Text(subtitle, style: GoogleFonts.lato(fontSize: 10, color: Colors.grey), overflow: TextOverflow.ellipsis),
+                Text(
+                  title,
+                  style: GoogleFonts.lato(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.lato(fontSize: 10, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
