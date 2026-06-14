@@ -288,7 +288,7 @@ Widget _buildProductsGrid() {
     final bool isFlashSale = selectedCategory == "Flash Sale";
 
     return Scaffold(
-      backgroundColor: const Color(0xfff5f5f5),
+      backgroundColor:  Color(0xfff9f6f3),
       body: Stack(
         children: [
           Column(

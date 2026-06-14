@@ -267,7 +267,7 @@ class _WalletState extends State<Wallet> {
     formattedDate = DateFormat("dd MMMM yyyy").format(DateTime.now());
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:  Color(0xfff9f6f3),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -315,11 +315,12 @@ class _WalletState extends State<Wallet> {
                                       fontWeight: FontWeight.w500)),
                               SizedBox(height: 4),
                               Text(
-                                "₹$_walletBalance",
-                                style: GoogleFonts.playfairDisplay(
+                                "₹ $_walletBalance",
+                                style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 28,
-                                    fontWeight: FontWeight.bold),
+                                    fontWeight: FontWeight.w500
+                                    ),
                               ),
                             ],
                           ),

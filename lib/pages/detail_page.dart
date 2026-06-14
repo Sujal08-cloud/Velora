@@ -594,9 +594,9 @@ class _DetailPageState extends State<DetailPage> {
                           ),
                           Text(
                             "₹$totalprice",
-                            style: GoogleFonts.playfairDisplay(
+                            style: TextStyle(
                               fontSize: 22,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               color: Color(0xff6e5038),
                             ),
                           ),

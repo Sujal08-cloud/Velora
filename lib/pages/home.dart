@@ -340,7 +340,7 @@ double _searchBarBottom = 130;
                         color: const Color.fromARGB(86, 0, 0, 0),
                         width: 1.1,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
@@ -364,13 +364,11 @@ double _searchBarBottom = 130;
                           ),
                         ),
                         Container(
+                          height: 48,
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: Color(0xff6e5038),
-                            borderRadius: BorderRadius.only(
-                              topRight: Radius.circular(8),
-                              bottomRight: Radius.circular(8),
-                            ),
+                            borderRadius: BorderRadius.only(topRight: Radius.circular(9), bottomRight: Radius.circular(9))
                           ),
                           child:
                               Icon(Icons.search, color: Colors.white, size: 25),
