@@ -65,16 +65,6 @@ class _SettingsPageState extends State<SettingsPage> {
               _showChangeEmailSheet();
             },
           ),
-          _sheetOptionTile(
-            Icons.delete_outline,
-            "Delete Account",
-            "Permanently delete your account",
-            () {
-              Navigator.pop(context);
-              _showDeleteAccountSheet();
-            },
-            color: Colors.red,
-          ),
         ],
       ),
     );
@@ -272,306 +262,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showDeleteAccountSheet() {
-    final rootCtx = context;
 
-    showModalBottomSheet(
-      context: rootCtx,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetCtx) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _sheetHandle(),
-              const SizedBox(height: 16),
-              const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 50),
-              const SizedBox(height: 12),
-              Text(
-                "Delete Account",
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "This action is permanent and cannot be undone. All your data will be lost.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.lato(fontSize: 13, color: Colors.grey),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(sheetCtx),
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text("Cancel",
-                              style: GoogleFonts.lato(fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pop(sheetCtx);
-                        _showConfirmPasswordSheet(rootCtx);
-                      },
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "Delete",
-                            style: GoogleFonts.lato(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showConfirmPasswordSheet(BuildContext rootCtx) {
-    final passwordController = TextEditingController();
-
-    showModalBottomSheet(
-      context: rootCtx,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      isDismissible: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (confirmCtx) {
-        return StatefulBuilder(
-          builder: (confirmCtx, setS) {
-            bool obscure = true;
-            bool isDeleting = false;
-
-            return StatefulBuilder(
-              builder: (confirmCtx, setInner) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(confirmCtx).viewInsets.bottom,
-                    left: 20,
-                    right: 20,
-                    top: 20,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(child: _sheetHandle()),
-                        const SizedBox(height: 16),
-                        const Icon(Icons.lock_outline,
-                            color: Color(0xff6e5038), size: 36),
-                        const SizedBox(height: 12),
-                        Text(
-                          "Confirm Your Identity",
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          "Enter your password to permanently delete your account.",
-                          style: GoogleFonts.lato(fontSize: 13, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 20),
-                        _passField(
-                          "Current Password",
-                          passwordController,
-                          obscure,
-                          () => setInner(() => obscure = !obscure),
-                        ),
-                        const SizedBox(height: 20),
-                        GestureDetector(
-                          onTap: isDeleting
-                              ? null
-                              : () async {
-                                  final password = passwordController.text.trim();
-
-                                  if (password.isEmpty) {
-                                    ScaffoldMessenger.of(rootCtx).showSnackBar(
-                                      SnackBar(
-                                        backgroundColor: Colors.red,
-                                        content: Text("Password cannot be empty",
-                                            style: GoogleFonts.lato(color: Colors.white)),
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  setInner(() => isDeleting = true);
-
-                                  try {
-                                    final user = FirebaseAuth.instance.currentUser;
-                                    final uid = user?.uid;
-                                    final email = user?.email;
-
-                                    if (user == null || email == null) {
-                                      setInner(() => isDeleting = false);
-                                      ScaffoldMessenger.of(rootCtx).showSnackBar(
-                                        SnackBar(
-                                          backgroundColor: Colors.red,
-                                          content: Text("No user session found. Please login again.",
-                                              style: GoogleFonts.lato(color: Colors.white)),
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    final credential = EmailAuthProvider.credential(
-                                      email: email,
-                                      password: password,
-                                    );
-                                    await user.reauthenticateWithCredential(credential);
-
-                                    if (uid != null) {
-                                      final userRef = FirebaseFirestore.instance
-                                          .collection("users")
-                                          .doc(uid);
-
-                                      for (final sub in [
-                                        "Cart",
-                                        "Orders",
-                                        "Transactions",
-                                        "shippingAddress",
-                                      ]) {
-                                        final snap = await userRef.collection(sub).get();
-                                        for (final doc in snap.docs) {
-                                          await doc.reference.delete();
-                                        }
-                                      }
-
-                                      await userRef.delete();
-                                    }
-
-                                    await SharedPreferenceHelper().saveUserId("");
-                                    await SharedPreferenceHelper().saveUserName("");
-                                    await SharedPreferenceHelper().saveUserEmail("");
-                                    await SharedPreferenceHelper().saveUserWallet("0");
-
-                                    await user.delete();
-
-                                    if (rootCtx.mounted) {
-                                      Navigator.of(rootCtx).pushAndRemoveUntil(
-                                        MaterialPageRoute(builder: (_) => const Login()),
-                                        (route) => false,
-                                      );
-                                    }
-                                  } on FirebaseAuthException catch (e) {
-                                    setInner(() => isDeleting = false);
-                                    String msg;
-                                    switch (e.code) {
-                                      case 'wrong-password':
-                                      case 'invalid-credential':
-                                        msg = "Incorrect password. Please try again.";
-                                        break;
-                                      case 'too-many-requests':
-                                        msg = "Too many attempts. Try again later.";
-                                        break;
-                                      case 'requires-recent-login':
-                                        msg = "Session expired. Please logout and login again.";
-                                        break;
-                                      case 'network-request-failed':
-                                        msg = "No internet connection. Try again.";
-                                        break;
-                                      default:
-                                        msg = e.message ?? "Something went wrong.";
-                                    }
-                                    ScaffoldMessenger.of(rootCtx).showSnackBar(
-                                      SnackBar(
-                                        backgroundColor: Colors.red,
-                                        content: Text(msg,
-                                            style: GoogleFonts.lato(color: Colors.white)),
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    setInner(() => isDeleting = false);
-                                    ScaffoldMessenger.of(rootCtx).showSnackBar(
-                                      SnackBar(
-                                        backgroundColor: Colors.red,
-                                        content: Text("Error: ${e.toString()}",
-                                            style: GoogleFonts.lato(color: Colors.white)),
-                                      ),
-                                    );
-                                  }
-                                },
-                          child: Container(
-                            width: double.infinity,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: isDeleting ? Colors.red.shade300 : Colors.red,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Center(
-                              child: isDeleting
-                                  ? const SizedBox(
-                                      height: 22,
-                                      width: 22,
-                                      child: CircularProgressIndicator(
-                                          color: Colors.white, strokeWidth: 2.5),
-                                    )
-                                  : Text(
-                                      "Delete My Account",
-                                      style: GoogleFonts.lato(
-                                        color: Colors.white,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(confirmCtx),
-                          child: _actionButton("Cancel", Colors.grey.shade400),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
   void _showAddressBookSheet() {
     showModalBottomSheet(
       context: context,
@@ -695,12 +386,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                         setModalState(() {});
                                       }
                                     },
-                                    onDelete: () {
-                                      setState(
-                                        () => _addresses.removeAt(index),
-                                      );
-                                      setModalState(() {});
-                                    },
                                     onSetDefault: () {
                                       setState(() {
                                         for (var a in _addresses) {
@@ -729,7 +414,6 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _addressCard(
     AddressModel addr, {
     required VoidCallback onEdit,
-    required VoidCallback onDelete,
     required VoidCallback onSetDefault,
   }) {
     return Container(
@@ -785,15 +469,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   color: Color(0xff6e5038),
                 ),
               ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: onDelete,
-                child: const Icon(
-                  Icons.delete_outline,
-                  size: 18,
-                  color: Colors.red,
-                ),
-              ),
+           
             ],
           ),
           const SizedBox(height: 10),

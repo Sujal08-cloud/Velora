@@ -20,6 +20,9 @@ class _SignupPageState extends State<SignupPage> {
   bool loading            = false;
   bool _isPasswordVisible = false;
 
+  String _passwordStrength     = '';
+  Color  _passwordStrengthColor = Colors.transparent;
+
   @override
   void dispose() {
     namecontroller.dispose();
@@ -31,6 +34,49 @@ class _SignupPageState extends State<SignupPage> {
   bool _isValidEmail(String email) {
     final regex = RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
     return regex.hasMatch(email.trim());
+  }
+
+  String? _validatePassword(String password) {
+    if (password.length < 8) {
+      return "Password must be at least 8 characters.";
+    }
+    if (password.length > 32) {
+      return "Password cannot exceed 32 characters.";
+    }
+    if (!password.contains(RegExp(r'[0-9]'))) {
+      return "Password must contain at least one number.";
+    }
+    if (!password.contains(RegExp(r'[A-Z]'))) {
+      return "Password must contain at least one capital letter.";
+    }
+    if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+      return "Password must contain at least one special character (!@#\$%).";
+    }
+    return null;
+  }
+
+  void _onPasswordChanged(String value) {
+    int score = 0;
+    if (value.length >= 8)                                    score++;
+    if (value.contains(RegExp(r'[0-9]')))                    score++;
+    if (value.contains(RegExp(r'[A-Z]')))                    score++;
+    if (value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]')))  score++;
+
+    setState(() {
+      if (value.isEmpty) {
+        _passwordStrength      = '';
+        _passwordStrengthColor = Colors.transparent;
+      } else if (score <= 1) {
+        _passwordStrength      = 'Weak';
+        _passwordStrengthColor = Colors.red;
+      } else if (score == 2 || score == 3) {
+        _passwordStrength      = 'Medium';
+        _passwordStrengthColor = Colors.orange;
+      } else {
+        _passwordStrength      = 'Strong';
+        _passwordStrengthColor = Colors.green;
+      }
+    });
   }
 
   void _showSnack(String msg, {Color bg = Colors.green}) {
@@ -61,12 +107,13 @@ class _SignupPageState extends State<SignupPage> {
       _showSnack("Please enter your name.", bg: Colors.red);
       return;
     }
-    if (email.isEmpty) {
-      _showSnack("Please enter your email.", bg: Colors.red);
+    if (name.length < 2) {
+      _showSnack("Name must be at least 2 characters.", bg: Colors.red);
       return;
     }
-    if (password.isEmpty) {
-      _showSnack("Please enter a password.", bg: Colors.red);
+
+    if (email.isEmpty) {
+      _showSnack("Please enter your email.", bg: Colors.red);
       return;
     }
     if (!_isValidEmail(email)) {
@@ -77,10 +124,22 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
+    // ✅ Password validation
+    if (password.isEmpty) {
+      _showSnack("Please enter a password.", bg: Colors.red);
+      return;
+    }
+    final passwordError = _validatePassword(password);
+    if (passwordError != null) {
+      _showSnack(passwordError, bg: Colors.red);
+      return;
+    }
+
     setState(() => loading = true);
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       await userCredential.user!.sendEmailVerification();
       await userCredential.user!.updateDisplayName(name);
@@ -118,7 +177,7 @@ class _SignupPageState extends State<SignupPage> {
       setState(() => loading = false);
       switch (e.code) {
         case "weak-password":
-          _showSnack("Password is too weak. Use at least 6 characters.", bg: Colors.red);
+          _showSnack("Password is too weak. Use at least 8 characters.", bg: Colors.red);
           break;
         case "email-already-in-use":
           _showSnack("Account already exists for this email.", bg: Colors.red);
@@ -218,6 +277,7 @@ class _SignupPageState extends State<SignupPage> {
                         controller: namecontroller,
                         hint: "Enter your name",
                         icon: Icons.person_outline,
+                        maxLength: 20, 
                       ),
 
                       const SizedBox(height: 20),
@@ -228,12 +288,46 @@ class _SignupPageState extends State<SignupPage> {
                         hint: "Enter your email",
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
+                        maxLength: 50, 
                       ),
 
                       const SizedBox(height: 20),
                       _fieldLabel("Password"),
                       const SizedBox(height: 8),
                       _passwordField(),
+                      if (_passwordStrength.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _passwordStrengthColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              "Password strength: $_passwordStrength",
+                              style: GoogleFonts.lato(
+                                fontSize: 12,
+                                color: _passwordStrengthColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      const SizedBox(height: 8),
+                      Text(
+                        "Min 8 chars • 1 capital • 1 number • 1 special character",
+                        style: GoogleFonts.lato(
+                          fontSize: 11,
+                          color: Colors.grey[400],
+                        ),
+                      ),
 
                       const SizedBox(height: 32),
                       SizedBox(
@@ -328,10 +422,12 @@ class _SignupPageState extends State<SignupPage> {
     required String hint,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
+    int? maxLength,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      maxLength: maxLength,
       style: GoogleFonts.lato(fontSize: 15, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hint,
@@ -345,6 +441,7 @@ class _SignupPageState extends State<SignupPage> {
         fillColor: const Color(0xFFF7F3EF),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        counterText: '', 
       ),
     );
   }
@@ -353,12 +450,17 @@ class _SignupPageState extends State<SignupPage> {
     return TextField(
       controller: passwordcontroller,
       obscureText: !_isPasswordVisible,
+      maxLength: 15, 
+      onChanged: _onPasswordChanged, 
       style: GoogleFonts.lato(fontSize: 15, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: "Enter your password",
         hintStyle: GoogleFonts.lato(color: Colors.grey[400], fontSize: 14),
-        prefixIcon:
-            const Icon(Icons.lock_outline, color: Color(0xff6e5038), size: 20),
+        prefixIcon: const Icon(
+          Icons.lock_outline,
+          color: Color(0xff6e5038),
+          size: 20,
+        ),
         suffixIcon: GestureDetector(
           onTap: () =>
               setState(() => _isPasswordVisible = !_isPasswordVisible),
@@ -376,6 +478,7 @@ class _SignupPageState extends State<SignupPage> {
         fillColor: const Color(0xFFF7F3EF),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        counterText: '', 
       ),
     );
   }

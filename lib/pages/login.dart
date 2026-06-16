@@ -20,6 +20,9 @@ class _LoginState extends State<Login> {
   bool _isPasswordVisible = false;
   bool _loading           = false;
 
+  int       _failedAttempts = 0;
+  DateTime? _lockoutUntil;
+
   @override
   void dispose() {
     emailcontroller.dispose();
@@ -32,6 +35,11 @@ class _LoginState extends State<Login> {
       r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
     );
     return regex.hasMatch(email.trim());
+  }
+  int _lockoutSecondsRemaining() {
+    if (_lockoutUntil == null) return 0;
+    final remaining = _lockoutUntil!.difference(DateTime.now()).inSeconds;
+    return remaining > 0 ? remaining : 0;
   }
 
   void _showSnack(String msg, {Color bg = Colors.red}) {
@@ -70,10 +78,21 @@ class _LoginState extends State<Login> {
       return;
     }
 
+    // ✅ Rate limit check — lockout active hai toh block karo
+    final remaining = _lockoutSecondsRemaining();
+    if (remaining > 0) {
+      _showSnack(
+        "Too many failed attempts. Please wait $remaining seconds before trying again.",
+        bg: Colors.orange,
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
       await userCredential.user!.reload();
       final User? freshUser = FirebaseAuth.instance.currentUser;
 
@@ -92,6 +111,10 @@ class _LoginState extends State<Login> {
         );
         return;
       }
+
+      _failedAttempts = 0;
+      _lockoutUntil   = null;
+
       await SharedPreferenceHelper().saveUserId(freshUser.uid);
       await SharedPreferenceHelper().saveUserEmail(freshUser.email ?? email);
 
@@ -128,16 +151,35 @@ class _LoginState extends State<Login> {
 
     } on FirebaseAuthException catch (e) {
       setState(() => _loading = false);
+
       final String message;
       switch (e.code) {
         case "invalid-credential":
         case "INVALID_LOGIN_CREDENTIALS":
         case "wrong-password":
         case "invalid-email":
-          message = "Invalid email or password.";
+       
+          _failedAttempts++;
+          if (_failedAttempts >= 5) {
+           
+            _lockoutUntil   = DateTime.now().add(const Duration(seconds: 30));
+            _failedAttempts = 0;
+            message = "Too many failed attempts. Please wait 30 seconds.";
+          } else {
+            final attemptsLeft = 5 - _failedAttempts;
+            message = "Invalid email or password. $attemptsLeft attempt${attemptsLeft == 1 ? '' : 's'} remaining.";
+          }
           break;
         case "user-not-found":
-          message = "No account found with this email.";
+         
+          _failedAttempts++;
+          if (_failedAttempts >= 5) {
+            _lockoutUntil   = DateTime.now().add(const Duration(seconds: 30));
+            _failedAttempts = 0;
+            message = "Too many failed attempts. Please wait 30 seconds.";
+          } else {
+            message = "No account found with this email.";
+          }
           break;
         case "user-disabled":
           message = "This account has been disabled.";
@@ -152,6 +194,7 @@ class _LoginState extends State<Login> {
           message = e.message ?? "Login failed. Please try again.";
       }
       _showSnack(message);
+
     } catch (e) {
       setState(() => _loading = false);
       _showSnack("Something went wrong. Please try again.");
@@ -172,7 +215,10 @@ class _LoginState extends State<Login> {
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      _showSnack("Password reset email sent! Check your inbox.", bg: Colors.green);
+      _showSnack(
+        "Password reset email sent! Check your inbox.",
+        bg: Colors.green,
+      );
     } on FirebaseAuthException catch (e) {
       final String message;
       switch (e.code) {
@@ -270,6 +316,7 @@ class _LoginState extends State<Login> {
                         hint: "Enter your email",
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
+                        maxLength: 100, // ✅ Email max length
                       ),
 
                       const SizedBox(height: 20),
@@ -371,6 +418,7 @@ class _LoginState extends State<Login> {
       ),
     );
   }
+
   Widget _fieldLabel(String label) {
     return Text(
       label,
@@ -387,10 +435,12 @@ class _LoginState extends State<Login> {
     required String hint,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
+    int? maxLength,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      maxLength: maxLength,
       style: GoogleFonts.lato(fontSize: 15, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hint,
@@ -404,6 +454,7 @@ class _LoginState extends State<Login> {
         fillColor: const Color(0xFFF7F3EF),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        counterText: '', 
       ),
     );
   }
@@ -412,6 +463,7 @@ class _LoginState extends State<Login> {
     return TextField(
       controller: passwordcontroller,
       obscureText: !_isPasswordVisible,
+      maxLength: 16, 
       style: GoogleFonts.lato(fontSize: 15, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: "Enter your password",
@@ -438,6 +490,7 @@ class _LoginState extends State<Login> {
         fillColor: const Color(0xFFF7F3EF),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        counterText: '',
       ),
     );
   }
