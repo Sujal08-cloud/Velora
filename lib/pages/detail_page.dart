@@ -1,3 +1,4 @@
+import 'package:clothing/pages/address.dart';
 import 'package:clothing/services/database.dart';
 import 'package:clothing/services/shared_prefrence.dart';
 import 'package:clothing/widgets/widget.dart';
@@ -6,7 +7,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-
 
 class DetailPage extends StatefulWidget {
   final String image, name, price, detail;
@@ -45,121 +45,156 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   Future<void> getthesharedpref() async {
-  id = await SharedPreferenceHelper().getUserId()
-      ?? FirebaseAuth.instance.currentUser?.uid;
+    id = await SharedPreferenceHelper().getUserId() ??
+        FirebaseAuth.instance.currentUser?.uid;
 
-  if (id != null) {
-    final doc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(id!)
-        .get();
-    wallet = doc.data()?["Wallet"]?.toString() ?? "0";
-    await SharedPreferenceHelper().saveUserWallet(wallet!);
+    if (id != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(id!)
+          .get();
+      wallet = doc.data()?["Wallet"]?.toString() ?? "0";
+      await SharedPreferenceHelper().saveUserWallet(wallet!);
+    }
+    setState(() {});
   }
-  setState(() {});
-}
-
 
   @override
   void initState() {
     super.initState();
     getthesharedpref();
-    totalprice = int.tryParse(widget.price) ?? 0; 
+    totalprice = int.tryParse(widget.price) ?? 0;
   }
 
   int get discountAmount {
-    if (widget.originalPrice == null || widget.originalPrice!.isEmpty) return 0;
+    if (widget.originalPrice == null || widget.originalPrice!.isEmpty)
+      return 0;
     int original = int.tryParse(widget.originalPrice!) ?? 0;
     int sale = int.tryParse(widget.price) ?? 0;
     return original - sale;
   }
 
   int get discountPercent {
-    if (widget.originalPrice == null || widget.originalPrice!.isEmpty) return 0;
+    if (widget.originalPrice == null || widget.originalPrice!.isEmpty)
+      return 0;
     int original = int.tryParse(widget.originalPrice!) ?? 0;
     int sale = int.tryParse(widget.price) ?? 0;
     if (original == 0) return 0;
     return (((original - sale) / original) * 100).round();
   }
+
   Future<void> addToCart() async {
-  if (id == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.orange,
-        content: Text(
-          "Please wait and try again!",
-          style: GoogleFonts.lato(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-    return;
-  }
-
-  setState(() => addingToCart = true);
-  try {
-    Map<String, dynamic> cartMap = {
-      "Name": widget.name,
-      "Price": widget.price,
-      "Image": widget.image,
-      "Detail": widget.detail,
-      "Quantity": quantity,
-      "Size": selectedSize,
-      "Total": totalprice,
-    };
-    await DatabaseMethods().addToCart(cartMap, id!, widget.name);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.green,
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text(
-              "Added to Cart!",
-              style: GoogleFonts.lato(
-                color: Colors.white,
-                fontSize: 16.0,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  } catch (e) {
-    print("CART ERROR: $e"); // ← debug ke liye
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.red,
-        content: Text(
-          "Error: $e", // ← exact error dikhega
-          style: GoogleFonts.lato(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-  setState(() => addingToCart = false);
-}
-
-
-  Future<void> placeOrder() async {
-    if (wallet == null || id == null) {
+    if (id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.orange,
           content: Text(
             "Please wait and try again!",
             style: GoogleFonts.lato(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+                color: Colors.white, fontWeight: FontWeight.w600),
           ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => addingToCart = true);
+    try {
+      Map<String, dynamic> cartMap = {
+        "Name": widget.name,
+        "Price": widget.price,
+        "Image": widget.image,
+        "Detail": widget.detail,
+        "Quantity": quantity,
+        "Size": selectedSize,
+        "Total": totalprice,
+      };
+      await DatabaseMethods().addToCart(cartMap, id!, widget.name);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "Added to Cart!",
+                style: GoogleFonts.lato(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("Error: $e",
+              style: GoogleFonts.lato(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
+        ),
+      );
+    }
+    setState(() => addingToCart = false);
+  }
+
+  Future<void> placeOrder() async {
+    if (wallet == null || id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text("Please wait and try again!",
+              style: GoogleFonts.lato(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
+        ),
+      );
+      return;
+    }
+
+  
+    Map<String, dynamic>? shippingAddress =
+        await DatabaseMethods().getShippingAddress(id!);
+
+    if (shippingAddress == null) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            "Shipping Address is noy added",
+            style: GoogleFonts.playfairDisplay(
+                fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            "Please add shipping address before placing an order.",
+            style:
+                GoogleFonts.lato(fontSize: 14, color: Colors.black54),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text("Later",
+                  style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xff6e5038)),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => ShippingAddressPage()),
+                );
+              },
+              child: Text("Add Address",
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
         ),
       );
       return;
@@ -183,6 +218,7 @@ class _DetailPageState extends State<DetailPage> {
           "Date": formattedDate,
           "Status": "Processing",
           "Size": selectedSize,
+          "ShippingAddress": shippingAddress,
         };
 
         Map<String, dynamic> paymentInfoMap = {
@@ -191,14 +227,13 @@ class _DetailPageState extends State<DetailPage> {
           "Date": formattedDate,
         };
 
-        await SharedPreferenceHelper().saveUserWallet(updatedAmount.toString());
+        await SharedPreferenceHelper()
+            .saveUserWallet(updatedAmount.toString());
         await DatabaseMethods().updateWallet(id!, updatedAmount.toString());
         await DatabaseMethods().addTransaction(paymentInfoMap, id!);
         await DatabaseMethods().addOrder(addOrder, id!);
 
-        setState(() {
-          wallet = updatedAmount.toString();
-        });
+        setState(() => wallet = updatedAmount.toString());
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -210,10 +245,9 @@ class _DetailPageState extends State<DetailPage> {
                 Text(
                   "Order Placed Successfully!",
                   style: GoogleFonts.lato(
-                    color: Colors.white,
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.w600,
-                  ),
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -226,10 +260,7 @@ class _DetailPageState extends State<DetailPage> {
             content: Text(
               "Insufficient wallet balance! Add money first.",
               style: GoogleFonts.lato(
-                color: Colors.white,
-                fontSize: 14.0,
-                fontWeight: FontWeight.w600,
-              ),
+                  color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ),
         );
@@ -238,13 +269,9 @@ class _DetailPageState extends State<DetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
-          content: Text(
-            "Order failed. Try again!",
-            style: GoogleFonts.lato(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          content: Text("Order failed. Try again!",
+              style: GoogleFonts.lato(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
         ),
       );
     }
@@ -269,11 +296,8 @@ class _DetailPageState extends State<DetailPage> {
                   errorBuilder: (c, e, s) => Container(
                     height: MediaQuery.of(context).size.height / 2.2,
                     color: Colors.grey.shade100,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 60,
-                      color: Colors.grey,
-                    ),
+                    child: Icon(Icons.image_not_supported,
+                        size: 60, color: Colors.grey),
                   ),
                 ),
                 Positioned(
@@ -288,7 +312,8 @@ class _DetailPageState extends State<DetailPage> {
                         color: Color(0xff6e5038),
                         borderRadius: BorderRadius.circular(60),
                       ),
-                      child: Icon(Icons.arrow_back, color: Colors.white),
+                      child:
+                          Icon(Icons.arrow_back, color: Colors.white),
                     ),
                   ),
                 ),
@@ -297,8 +322,8 @@ class _DetailPageState extends State<DetailPage> {
                     top: 33,
                     right: 18,
                     child: Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(10),
@@ -306,18 +331,15 @@ class _DetailPageState extends State<DetailPage> {
                       child: Text(
                         "$discountPercent% OFF",
                         style: GoogleFonts.lato(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800),
                       ),
                     ),
                   ),
               ],
             ),
-
             SizedBox(height: 14),
-
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -328,9 +350,7 @@ class _DetailPageState extends State<DetailPage> {
                     child: Text(
                       widget.name,
                       style: GoogleFonts.playfairDisplay(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   ),
                   SizedBox(width: 12),
@@ -354,10 +374,9 @@ class _DetailPageState extends State<DetailPage> {
                           Text(
                             "₹${widget.price}",
                             style: GoogleFonts.lato(
-                              color: Color(0xff6e5038),
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                color: Color(0xff6e5038),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -368,15 +387,15 @@ class _DetailPageState extends State<DetailPage> {
                           decoration: BoxDecoration(
                             color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.green.shade200),
+                            border:
+                                Border.all(color: Colors.green.shade200),
                           ),
                           child: Text(
                             "Save ₹$discountAmount",
                             style: GoogleFonts.lato(
-                              color: Colors.green,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                                color: Colors.green,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700),
                           ),
                         ),
                     ],
@@ -384,18 +403,12 @@ class _DetailPageState extends State<DetailPage> {
                 ],
               ),
             ),
-
             SizedBox(height: 15),
-
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                "Product Details",
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text("Product Details",
+                  style: GoogleFonts.playfairDisplay(
+                      fontSize: 15, fontWeight: FontWeight.bold)),
             ),
             SizedBox(height: 4),
             Padding(
@@ -403,24 +416,17 @@ class _DetailPageState extends State<DetailPage> {
               child: Text(
                 widget.detail,
                 style: GoogleFonts.lato(
-                  color: Colors.black54,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+                    color: Colors.black54,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500),
               ),
             ),
-
             SizedBox(height: 16),
-
             Padding(
               padding: EdgeInsets.only(left: 16),
-              child: Text(
-                "Select Size",
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text("Select Size",
+                  style: GoogleFonts.playfairDisplay(
+                      fontSize: 15, fontWeight: FontWeight.bold)),
             ),
             SizedBox(height: 8),
             Container(
@@ -433,11 +439,8 @@ class _DetailPageState extends State<DetailPage> {
                       ? AppWidget.selected("S")
                       : GestureDetector(
                           onTap: () => setState(() {
-                            small = true;
-                            medium = false;
-                            large = false;
-                            xl = false;
-                            xxl = false;
+                            small = true; medium = false;
+                            large = false; xl = false; xxl = false;
                           }),
                           child: AppWidget.nonSelected("S"),
                         ),
@@ -446,11 +449,8 @@ class _DetailPageState extends State<DetailPage> {
                       ? AppWidget.selected("M")
                       : GestureDetector(
                           onTap: () => setState(() {
-                            small = false;
-                            medium = true;
-                            large = false;
-                            xl = false;
-                            xxl = false;
+                            small = false; medium = true;
+                            large = false; xl = false; xxl = false;
                           }),
                           child: AppWidget.nonSelected("M"),
                         ),
@@ -459,11 +459,8 @@ class _DetailPageState extends State<DetailPage> {
                       ? AppWidget.selected("L")
                       : GestureDetector(
                           onTap: () => setState(() {
-                            small = false;
-                            medium = false;
-                            large = true;
-                            xl = false;
-                            xxl = false;
+                            small = false; medium = false;
+                            large = true; xl = false; xxl = false;
                           }),
                           child: AppWidget.nonSelected("L"),
                         ),
@@ -472,11 +469,8 @@ class _DetailPageState extends State<DetailPage> {
                       ? AppWidget.selected("XL")
                       : GestureDetector(
                           onTap: () => setState(() {
-                            small = false;
-                            medium = false;
-                            large = false;
-                            xl = true;
-                            xxl = false;
+                            small = false; medium = false;
+                            large = false; xl = true; xxl = false;
                           }),
                           child: AppWidget.nonSelected("XL"),
                         ),
@@ -485,29 +479,20 @@ class _DetailPageState extends State<DetailPage> {
                       ? AppWidget.selected("XXL")
                       : GestureDetector(
                           onTap: () => setState(() {
-                            small = false;
-                            medium = false;
-                            large = false;
-                            xl = false;
-                            xxl = true;
+                            small = false; medium = false;
+                            large = false; xl = false; xxl = true;
                           }),
                           child: AppWidget.nonSelected("XXL"),
                         ),
                 ],
               ),
             ),
-
             SizedBox(height: 20),
-
             Padding(
               padding: EdgeInsets.only(left: 16),
-              child: Text(
-                "Select Quantity",
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text("Select Quantity",
+                  style: GoogleFonts.playfairDisplay(
+                      fontSize: 15, fontWeight: FontWeight.bold)),
             ),
             SizedBox(height: 12),
             Container(
@@ -524,7 +509,8 @@ class _DetailPageState extends State<DetailPage> {
                   GestureDetector(
                     onTap: () {
                       quantity++;
-                      totalprice = quantity * (int.tryParse(widget.price) ?? 0);
+                      totalprice =
+                          quantity * (int.tryParse(widget.price) ?? 0);
                       setState(() {});
                     },
                     child: Container(
@@ -537,19 +523,15 @@ class _DetailPageState extends State<DetailPage> {
                       child: Icon(Icons.add, color: Colors.white),
                     ),
                   ),
-                  Text(
-                    quantity.toString(),
-                    style: GoogleFonts.lato(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(quantity.toString(),
+                      style: GoogleFonts.lato(
+                          fontSize: 14, fontWeight: FontWeight.bold)),
                   GestureDetector(
                     onTap: () {
                       if (quantity > 1) {
                         quantity--;
-                        totalprice =
-                            quantity * (int.tryParse(widget.price) ?? 0);
+                        totalprice = quantity *
+                            (int.tryParse(widget.price) ?? 0);
                         setState(() {});
                       }
                     },
@@ -566,15 +548,15 @@ class _DetailPageState extends State<DetailPage> {
                 ],
               ),
             ),
-
             SizedBox(height: 20),
-
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                border:
+                    Border(top: BorderSide(color: Colors.grey.shade200)),
               ),
               child: Column(
                 children: [
@@ -584,21 +566,17 @@ class _DetailPageState extends State<DetailPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Total Price",
-                            style: GoogleFonts.lato(
-                              color: Colors.black45,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
+                          Text("Total Price",
+                              style: GoogleFonts.lato(
+                                  color: Colors.black45,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13)),
                           Text(
                             "₹$totalprice",
                             style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff6e5038),
-                            ),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff6e5038)),
                           ),
                         ],
                       ),
@@ -609,68 +587,67 @@ class _DetailPageState extends State<DetailPage> {
                           decoration: BoxDecoration(
                             color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.green.shade200),
+                            border:
+                                Border.all(color: Colors.green.shade200),
                           ),
                           child: Text(
                             "Save ₹${discountAmount * quantity}",
                             style: GoogleFonts.lato(
-                              color: Colors.green.shade700,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                                color: Colors.green.shade700,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700),
                           ),
                         ),
                     ],
                   ),
-
                   SizedBox(height: 14),
                   id == null
                       ? Center(
                           child: CircularProgressIndicator(
-                            color: Color(0xff6e5038),
-                            strokeWidth: 2,
-                          ),
+                              color: Color(0xff6e5038), strokeWidth: 2),
                         )
                       : Row(
                           children: [
                             if (!widget.fromCart) ...[
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: addingToCart ? null : addToCart,
+                                  onTap:
+                                      addingToCart ? null : addToCart,
                                   child: Container(
                                     height: 50,
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius:
+                                          BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: Color(0xff6e5038),
-                                        width: 1.5,
-                                      ),
+                                          color: Color(0xff6e5038),
+                                          width: 1.5),
                                     ),
                                     child: Center(
                                       child: addingToCart
                                           ? CircularProgressIndicator(
                                               color: Color(0xff6e5038),
-                                              strokeWidth: 2,
-                                            )
+                                              strokeWidth: 2)
                                           : Row(
                                               mainAxisAlignment:
-                                                  MainAxisAlignment.center,
+                                                  MainAxisAlignment
+                                                      .center,
                                               children: [
                                                 Icon(
-                                                  Icons.shopping_cart_outlined,
-                                                  color: Color(0xff6e5038),
-                                                  size: 20,
-                                                ),
+                                                    Icons
+                                                        .shopping_cart_outlined,
+                                                    color: Color(
+                                                        0xff6e5038),
+                                                    size: 20),
                                                 SizedBox(width: 6),
-                                                Text(
-                                                  "Add to Cart",
-                                                  style: GoogleFonts.lato(
-                                                    color: Color(0xff6e5038),
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
+                                                Text("Add to Cart",
+                                                    style: GoogleFonts.lato(
+                                                        color: Color(
+                                                            0xff6e5038),
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight
+                                                                .w700)),
                                               ],
                                             ),
                                     ),
@@ -679,30 +656,28 @@ class _DetailPageState extends State<DetailPage> {
                               ),
                               SizedBox(width: 12),
                             ],
-
                             Expanded(
                               child: GestureDetector(
-                                onTap: placingOrder ? null : placeOrder,
+                                onTap:
+                                    placingOrder ? null : placeOrder,
                                 child: Container(
                                   height: 50,
                                   decoration: BoxDecoration(
                                     color: Color(0xff6e5038),
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius:
+                                        BorderRadius.circular(16),
                                   ),
                                   child: Center(
                                     child: placingOrder
                                         ? CircularProgressIndicator(
                                             color: Colors.white,
-                                            strokeWidth: 2,
-                                          )
-                                        : Text(
-                                            "Place Order",
+                                            strokeWidth: 2)
+                                        : Text("Place Order",
                                             style: GoogleFonts.lato(
-                                              color: Colors.white,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight:
+                                                    FontWeight.w700)),
                                   ),
                                 ),
                               ),
@@ -712,7 +687,6 @@ class _DetailPageState extends State<DetailPage> {
                 ],
               ),
             ),
-
             SizedBox(height: 20),
           ],
         ),

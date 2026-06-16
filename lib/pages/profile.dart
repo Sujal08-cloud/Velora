@@ -324,10 +324,10 @@ class _ProfileState extends State<Profile> {
                         SizedBox(width: 10),
                         Text(
                           "₹$_walletBalance",
-                          style: GoogleFonts.playfairDisplay(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],

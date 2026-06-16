@@ -87,8 +87,10 @@ class _ShippingAddressPageState extends State<ShippingAddressPage> {
       await DatabaseMethods().saveShippingAddress(addressMap, userId!);
       _showSnack("Address saved successfully", Colors.green);
     } catch (e) {
-      _showSnack("Failed to save address", Colors.red);
-    }
+
+  debugPrint("SAVE ADDRESS ERROR: $e");
+  _showSnack("Error: $e", Colors.red); 
+}
 
     setState(() => loading = false);
   }
